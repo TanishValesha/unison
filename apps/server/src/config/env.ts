@@ -8,6 +8,15 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   DATABASE_URL: z.string().optional(),
+  YOUTUBE_API_KEY: z.string().min(1, 'YOUTUBE_API_KEY is required'),
+  SYNC_INTERVAL_MS: z
+    .string()
+    .default('2000')
+    .transform((v) => parseInt(v, 10)),
+  DRIFT_TOLERANCE_MS: z
+    .string()
+    .default('80')
+    .transform((v) => parseInt(v, 10)),
 });
 
 const parsed = envSchema.safeParse(process.env);
