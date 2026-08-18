@@ -20,14 +20,13 @@ src/
   controllers/      # Parse request, call service, format HTTP response
   services/         # Business logic, orchestration, no HTTP concerns
   repositories/     # All database access; one class per aggregate root
-  middleware/        # auth, validate, rateLimiter, requestId, errorHandler
+  middleware/        # auth, validate, rateLimiter, errorHandler
   errors/           # AppError base class, domain-specific subclasses
-  types/            # Augmented Express types (req.user), shared interfaces
   utils/            # Pure helper functions — no side effects
 ```
 
 ## Middleware
-- Register in order: `helmet`, `cors`, body parser, `requestId`, `morgan`/`pino-http`, auth, routes, `errorHandler`.
+- Register in order: `helmet`, `cors`, body parser, `morgan`, `errorHandler`.
 - Configure `helmet` with explicit CSP directives. Do not rely on defaults for APIs serving sensitive data.
 - Whitelist CORS origins explicitly. Never pass `cors()` with no arguments in production.
 - Validate every request body, query, and params with a Zod middleware factory before hitting controllers.
@@ -35,9 +34,7 @@ src/
 
 ## Routes & Controllers
 - Mount routes with `app.use('/api/v1', router)`. Version in the URL prefix, not per-route.
-- Keep controllers to ~30 lines: `const data = validate(req); const result = await service.do(data); res.json(result)`.
-- Use a typed `RequestHandler` wrapper: `type Handler<P, ResB, ReqB, Q> = RequestHandler<P, ResB, ReqB, Q>`.
-- Return a consistent envelope: `{ data: T, meta?: PaginationMeta }` for success; `{ error: { code, message, details? } }` for failure.
+- Keep controllers to ~40 lines: `const data = validate(req); const result = await service.do(data); res.json(result)`.
 - Use correct HTTP semantics: `201` for created resources, `204` for successful deletes with no body, `409` for conflicts, `422` for validation failures.
 - Implement cursor-based pagination for any list endpoint with potentially unbounded rows.
 
@@ -45,7 +42,6 @@ src/
 - Define `AppError extends Error` with `statusCode: number`, `code: string`, `isOperational: boolean`.
 - Create typed subclasses: `NotFoundError(resource)`, `ValidationError(details)`, `UnauthorizedError()`, `ConflictError(field)`.
 - Services throw `AppError` subclasses. The error handler middleware catches everything.
-- Wrap every async route handler with `catchAsync` to forward rejections: `(fn) => (req, res, next) => fn(req, res, next).catch(next)`.
 - Log operational errors at `warn` level, unexpected errors at `error` level with full stack.
 - Register `process.on('unhandledRejection', ...)` and `process.on('uncaughtException', ...)` — log and exit with code `1`.
 
@@ -56,7 +52,6 @@ src/
 - Return `422 Unprocessable Entity` with a `details` array of `{ field, message }` objects on validation failure.
 
 ## Performance
-- Use `compression` middleware. Set `threshold: 1024` to skip compressing small responses.
 - Add `ETag`/`Cache-Control` headers on read-heavy GET endpoints. Use weak ETags for partial-match semantics.
 - Configure database connection pooling (`pg.Pool` or Prisma pool) with `max` sized to `(CPU cores × 2) + 1`.
 - Implement graceful shutdown: `server.close()` → drain in-flight requests → close DB pool → `process.exit(0)`.
