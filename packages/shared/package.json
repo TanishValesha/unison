@@ -1,5 +1,5 @@
 {
-  "name": "shared",
+  "name": "@unison/shared",
   "version": "1.0.0",
   "description": "Shared types for Unison - YouTube Music Listen Along",
   "main": "./src/index.ts",

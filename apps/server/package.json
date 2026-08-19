@@ -17,7 +17,7 @@
     "express": "^5.2.1",
     "helmet": "^8.3.0",
     "morgan": "^1.11.0",
-    "shared": "workspace:^",
+    "@unison/shared": "workspace:^",
     "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
