@@ -9,6 +9,30 @@ import { env } from '../config/env';
 const syncIntervals = new Map<string, NodeJS.Timeout>();
 
 /**
+ * Compute the current position including elapsed time since last state change.
+ */
+function getCurrentPosition(room: NonNullable<ReturnType<typeof getRoom>>): number {
+  if (!room.playing) return room.positionMs;
+  const elapsed = (Date.now() - room.serverTimestamp) * room.playbackRate;
+  return room.positionMs + elapsed;
+}
+
+/**
+ * Build a SYNC message with the computed current position.
+ */
+function buildSyncMessage(room: NonNullable<ReturnType<typeof getRoom>>): SyncMessage {
+  return {
+    type: 'SYNC',
+    trackId: room.trackId,
+    positionMs: getCurrentPosition(room),
+    serverTimestamp: Date.now(),
+    playing: room.playing,
+    playbackRate: room.playbackRate,
+    version: room.version,
+  };
+}
+
+/**
  * Start broadcasting SYNC messages to a room every SYNC_INTERVAL_MS.
  * Only broadcasts when the room is playing.
  */
@@ -24,17 +48,7 @@ export function startSyncLoop(roomId: string, io: SocketIOServer): void {
 
     if (!room.playing) return;
 
-    const syncMessage: SyncMessage = {
-      type: 'SYNC',
-      trackId: room.trackId,
-      positionMs: room.positionMs,
-      serverTimestamp: room.serverTimestamp,
-      playing: room.playing,
-      playbackRate: room.playbackRate,
-      version: room.version,
-    };
-
-    io.to(`room:${roomId}`).emit('SYNC', syncMessage);
+    io.to(`room:${roomId}`).emit('SYNC', buildSyncMessage(room));
   }, env.SYNC_INTERVAL_MS);
 
   syncIntervals.set(roomId, interval);
@@ -58,15 +72,5 @@ export function broadcastSyncNow(roomId: string, io: SocketIOServer): void {
   const room = getRoom(roomId);
   if (!room) return;
 
-  const syncMessage: SyncMessage = {
-    type: 'SYNC',
-    trackId: room.trackId,
-    positionMs: room.positionMs,
-    serverTimestamp: room.serverTimestamp,
-    playing: room.playing,
-    playbackRate: room.playbackRate,
-    version: room.version,
-  };
-
-  io.to(`room:${roomId}`).emit('SYNC', syncMessage);
+  io.to(`room:${roomId}`).emit('SYNC', buildSyncMessage(room));
 }
