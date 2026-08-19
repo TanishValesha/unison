@@ -1,5 +1,5 @@
 import { env } from '../config/env';
-import { YouTubeTrack } from '../../../packages/shared/src';
+import { YouTubeTrack } from '@unison/shared';
 import { LRUCache } from './cache';
 import { YouTubeSearchResponse, YouTubeVideosResponse } from './types';
 
